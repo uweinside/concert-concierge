@@ -14,4 +14,8 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\ConcertConcierge.TicketMaster\ConcertConcierge.TicketMaster.csproj" />
+  </ItemGroup>
+
 </Project>
