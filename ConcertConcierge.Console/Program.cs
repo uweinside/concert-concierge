@@ -134,6 +134,14 @@ var searchEventsTool = new FunctionToolDefinition(
             "classificationName": {
                 "type": "string",
                 "description": "Event classification (e.g., 'Music', 'Sports', 'Arts & Theatre')"
+            },
+            "size": {
+                "type": "integer",
+                "description": "Number of events to return per page (default: 20, max: 200)"
+            },
+            "page": {
+                "type": "integer",
+                "description": "Page number for pagination, 0-indexed (default: 0)"
             }
         },
         "required": []
@@ -325,6 +333,14 @@ while (true)
                                                         functionArgs["classificationName"].ValueKind == JsonValueKind.String 
                                 ? functionArgs["classificationName"].GetString() : null;
                             
+                            int size = functionArgs?.ContainsKey("size") == true && 
+                                      functionArgs["size"].ValueKind == JsonValueKind.Number 
+                                ? functionArgs["size"].GetInt32() : 20;
+                            
+                            int page = functionArgs?.ContainsKey("page") == true && 
+                                      functionArgs["page"].ValueKind == JsonValueKind.Number 
+                                ? functionArgs["page"].GetInt32() : 0;
+                            
                             // Display what we're searching for
                             Console.WriteLine($"      Keyword: {keyword ?? "(none)"}");
                             Console.WriteLine($"      City: {city ?? "(none)"}");
@@ -338,7 +354,9 @@ while (true)
                                 city: city,
                                 stateCode: stateCode,
                                 countryCode: countryCode,
-                                classificationName: classificationName
+                                classificationName: classificationName,
+                                size: size,
+                                page: page
                             );
                             
                             // SERIALIZE RESULT

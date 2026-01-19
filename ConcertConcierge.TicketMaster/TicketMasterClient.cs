@@ -23,7 +23,8 @@ public class TicketMasterClient
         string? stateCode = null,
         string? countryCode = null,
         string? classificationName = null,
-        int size = 20)
+        int size = 20,
+        int page = 0)
     {
         // Default to US if no country specified and state code is provided
         if (string.IsNullOrEmpty(countryCode) && !string.IsNullOrEmpty(stateCode))
@@ -34,7 +35,8 @@ public class TicketMasterClient
         var queryParams = new List<string>
         {
             $"apikey={_apiKey}",
-            $"size={size}"
+            $"size={size}",
+            $"page={page}"
         };
 
         if (!string.IsNullOrEmpty(keyword))
