@@ -93,14 +93,42 @@ while (true)
             if (latestMessage != null && latestMessage.Role.ToString() == "assistant")
             {
                 Console.Write("\nAssistant: ");
+                
+                // Track file IDs to download
+                var fileIdsToDownload = new List<string>();
+                
                 foreach (var content in latestMessage.ContentItems)
                 {
                     if (content is MessageTextContent textContent)
                     {
                         Console.WriteLine(textContent.Text);
+                        
+                        // Check for file annotations in the text
+                        foreach (var annotation in textContent.Annotations)
+                        {
+                            if (annotation is MessageTextFilePathAnnotation filePathAnnotation)
+                            {
+                                fileIdsToDownload.Add(filePathAnnotation.FileId);
+                            }
+                        }
+                    }
+                    else if (content is MessageImageFileContent imageContent)
+                    {
+                        Console.WriteLine($"[Image File: {imageContent.FileId}]");
+                        fileIdsToDownload.Add(imageContent.FileId);
                     }
                 }
                 Console.WriteLine();
+
+                // Download all files found in annotations
+                if (fileIdsToDownload.Count > 0)
+                {
+                    Console.WriteLine($"\n📎 {fileIdsToDownload.Count} file(s) generated:");
+                    foreach (var fileId in fileIdsToDownload)
+                    {
+                        DownloadFile(client, fileId, "file");
+                    }
+                }
             }
         }
         else
@@ -121,3 +149,47 @@ while (true)
 // Clean up
 client.Threads.DeleteThread(thread.Id);
 Console.WriteLine("\nConversation thread deleted.");
+
+// Helper method to download files
+static void DownloadFile(PersistentAgentsClient client, string fileId, string fileType)
+{
+    try
+    {
+        // Get file metadata
+        var fileInfoResponse = client.Files.GetFile(fileId);
+        var fileInfo = fileInfoResponse.Value;
+        
+        // Extract just the filename from potential full paths like "/mnt/data/file.pdf"
+        var rawFileName = fileInfo.Filename ?? $"{fileType}_{fileId}";
+        var fileName = Path.GetFileName(rawFileName);
+        
+        Console.WriteLine($"  - {fileName}");
+        
+        // Download file content
+        var fileContentResponse = client.Files.GetFileContent(fileId);
+        var fileContent = fileContentResponse.Value;
+        
+        // Save to Downloads folder
+        var downloadsPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), 
+            "Downloads");
+        var filePath = Path.Combine(downloadsPath, fileName);
+        
+        // Handle duplicate filenames
+        int counter = 1;
+        while (File.Exists(filePath))
+        {
+            var nameWithoutExt = Path.GetFileNameWithoutExtension(fileName);
+            var extension = Path.GetExtension(fileName);
+            filePath = Path.Combine(downloadsPath, $"{nameWithoutExt}_{counter}{extension}");
+            counter++;
+        }
+        
+        File.WriteAllBytes(filePath, fileContent.ToArray());
+        Console.WriteLine($"    ✓ Downloaded to: {filePath}");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"    ✗ Failed to download file {fileId}: {ex.Message}");
+    }
+}
